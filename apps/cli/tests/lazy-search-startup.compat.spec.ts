@@ -55,6 +55,7 @@ function runBuiltWeb(cwd: string): Promise<{ stdout: string; stderr: string; cod
     delete env.NODE_OPTIONS
     delete env.NODE_NO_WARNINGS
     const child = spawn(process.execPath, [
+      '--expose-internals',
       builtBin,
       'web',
       '--no-open',

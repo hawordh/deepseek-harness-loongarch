@@ -211,7 +211,7 @@ function runInstaller(
   })
 }
 
-describe('worktree-local Lefthook installer', { timeout: 30_000 }, () => {
+describe.skipIf(process.arch === 'loong64')('worktree-local Lefthook installer', { timeout: 30_000 }, () => {
   for (const [label, extraEnv] of [
     ['CI', { CI: 'true' }],
     ['GitHub Actions', { GITHUB_ACTIONS: 'true' }],
@@ -873,4 +873,14 @@ describe('worktree-local Lefthook installer', { timeout: 30_000 }, () => {
     expect(gitResult(fixture, fixture.main, ['config', '--get', 'extensions.worktreeConfig']).status).toBe(1)
     expect(existsSync(hooksPath(fixture, fixture.main))).toBe(false)
   })
+})
+
+it.runIf(process.arch === 'loong64')('no-ops on loong64 where no prebuilt lefthook binary exists', async () => {
+  const fixture = createFixture()
+
+  const result = await runInstaller(fixture, fixture.main)
+
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stdout).toContain('skip on loong64')
+  expect(existsSync(hooksPath(fixture, fixture.main))).toBe(false)
 })

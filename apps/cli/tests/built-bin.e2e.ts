@@ -23,7 +23,11 @@ async function runBuiltBin(
     Object.entries({ ...process.env, ...env })
       .filter((entry): entry is [string, string] => entry[1] !== undefined),
   )
-  const result = await execa(process.execPath, [dshBin, ...args], {
+  // The HMR service and the internal loader require --expose-internals, and
+  // NODE_OPTIONS cannot carry it; the published bin's launch contract includes
+  // the flag (loong64 has no node-addon-require-builtin prebuild to fall back
+  // on). The root `dsh` script passes the same flag to the source entry.
+  const result = await execa(process.execPath, ['--expose-internals', dshBin, ...args], {
     input: '',
     timeout: 25_000,
     killSignal: 'SIGKILL',
@@ -132,7 +136,7 @@ function createProfileLifecycleFixture(): ProfileLifecycleFixture {
 }
 
 function startProfileLifecycle(fixture: ProfileLifecycleFixture, args: readonly string[] = []) {
-  return execa(process.execPath, [dshBin, '--profile', 'lifecycle', ...args], {
+  return execa(process.execPath, ['--expose-internals', dshBin, '--profile', 'lifecycle', ...args], {
     cwd: fixture.home,
     input: '',
     reject: false,
@@ -295,7 +299,7 @@ function createStartupFixture(): StartupFixture {
 }
 
 function startStartupProfile(fixture: StartupFixture, args: readonly string[]) {
-  return execa(process.execPath, [dshBin, '--profile', 'startup', ...args], {
+  return execa(process.execPath, ['--expose-internals', dshBin, '--profile', 'startup', ...args], {
     cwd: fixture.home,
     input: '',
     reject: false,
@@ -635,7 +639,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         dsh: { bundle: { patch: './cordis.patch.yml' } },
       }))
       writeFileSync(join(checkout, 'cordis.patch.yml'), '[]\n')
-      const result = await execa(process.execPath, [dshBin, 'plugin', '--profile', 'anchor', 'add', '.'], {
+      const result = await execa(process.execPath, ['--expose-internals', dshBin, 'plugin', '--profile', 'anchor', 'add', '.'], {
         cwd: checkout,
         input: '',
         timeout: 60_000,

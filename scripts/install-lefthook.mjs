@@ -689,6 +689,11 @@ function probePairingMergeDriver(root) {
 }
 
 async function main() {
+  if (process.arch === 'loong64') {
+    console.log('[install-lefthook] skip on loong64')
+    process.exit(0)
+  }
+
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') return
   if (typeof lefthookPackage.bin?.lefthook !== 'string') return
   const probe = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' })

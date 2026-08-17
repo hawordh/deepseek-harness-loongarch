@@ -1,0 +1,14 @@
+diff --git a/postinstall.js b/postinstall.js
+index 0f308bf5b282b6e294b6ca97345e3373b9bd69f0..181fa8284e0d2745bc1f1fb35f5e46f1bdfa5217 100644
+--- a/postinstall.js
++++ b/postinstall.js
+@@ -4,5 +4,9 @@
+ function install() {
++  // loong64 has no prebuilt binary; scripts/install-lefthook.mjs skips hooks there.
++  if (process.arch === "loong64") {
++    return;
++  }
+   const isEnabled = (value) => value && value !== "0" && value !== "false";
+   if (isEnabled(process.env.CI) && !isEnabled(process.env.LEFTHOOK)) {
+     return
+   }

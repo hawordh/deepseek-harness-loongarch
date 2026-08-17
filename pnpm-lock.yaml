@@ -10,6 +10,7 @@ overrides:
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: b40ae545608897914bd25fb009c97eeac478c34e8a910298ddcb01b746534bb0
+  lefthook@2.1.9: 8b78b8ab85d12d1dec9ad6dd358deb724e6ada08241b556291d30ab49d1533a8
 
 importers:
 
@@ -77,7 +78,7 @@ importers:
         version: 6.16.1
       lefthook:
         specifier: ^2.1.9
-        version: 2.1.9
+        version: 2.1.9(patch_hash=8b78b8ab85d12d1dec9ad6dd358deb724e6ada08241b556291d30ab49d1533a8)
       lightningcss:
         specifier: ^1.32.0
         version: 1.32.0
@@ -907,7 +908,7 @@ importers:
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
       sharp:
-        specifier: ^0.35.3
+        specifier: 0.35.3
         version: 0.35.3(@types/node@22.20.0)
     devDependencies:
       '@deepseek-ai/cordis':
@@ -18028,7 +18029,7 @@ snapshots:
   lefthook-windows-x64@2.1.9:
     optional: true
 
-  lefthook@2.1.9:
+  lefthook@2.1.9(patch_hash=8b78b8ab85d12d1dec9ad6dd358deb724e6ada08241b556291d30ab49d1533a8):
     optionalDependencies:
       lefthook-darwin-arm64: 2.1.9
       lefthook-darwin-x64: 2.1.9

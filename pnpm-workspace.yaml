@@ -70,3 +70,4 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch
+  lefthook@2.1.9: patches/lefthook@2.1.9.patch

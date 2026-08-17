@@ -6,6 +6,17 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 它采用**一切皆插件**的架构，并由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper)。
 
+## LoongArch64
+
+DeepSeek Harness 同样支持在 loongarch64（Debian）上运行。官方 npm 原生依赖只发布 `linux-x64` 与 `linux-arm64` 的预编译二进制，loong64 检出需要从源码编译少量 addon；`scripts/loongarch/setup.sh` 会完成整个引导：
+
+```sh
+./scripts/loongarch/setup.sh
+./scripts/loongarch/run-dsh.sh web
+```
+
+`setup.sh` 会安装构建依赖、编译 libvips 8.18.3 以及 lightningcss、rolldown、sharp 原生绑定，修复 pnpm workspace 链接，并构建整个 workspace。Web UI 默认地址为 `http://127.0.0.1:3080`。
+
 ## 开发者预览
 
 DeepSeek Harness 目前处于 _开发者预览_ 阶段，正在快速迭代。**未来将出现破坏兼容性的变更。**

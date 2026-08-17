@@ -10,7 +10,7 @@ The harness runs on loongarch64 (Debian) in Web mode, but several npm native dep
 
 ## Decision
 
-LoongArch64 bootstrap lives in the repo as `scripts/loongarch/` (`setup.sh`, `verify.sh`, `run-dsh.sh`), a pnpm patch for lefthook, and the runbook at `deepseek_harness_build.md`:
+LoongArch64 bootstrap lives in the repo as `scripts/loongarch/` (`setup.sh`, `verify.sh`, `run-dsh.sh`), a pnpm patch for lefthook, and a LoongArch64 section in `README.md`:
 
 - **sharp** stays pinned at `0.35.3`; its addon is rebuilt with node-gyp inside the installed package so it lands at `src/build/Release/sharp-linux-loong64-0.35.3.node`, the loader's first lookup path — no patched `dist` and no fabricated `@img/sharp-linux-loong64` package. libvips 8.18.3 (sharp's minimum) is built from source with meson into `$VIPS_PREFIX` (default `$HOME/.local`); `run-dsh.sh` exports `LD_LIBRARY_PATH` for it.
 - **lightningcss** 1.32.0 and each installed rolldown version are compiled from their pinned upstream tags (rust-toolchain bumped to 1.97.0 for loongarch64 support) and installed into the pnpm store layout the resolvers expect.

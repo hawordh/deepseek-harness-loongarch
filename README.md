@@ -6,6 +6,17 @@ DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek 
 
 It uses an architecture where **everything is a plugin**, and is powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper).
 
+## LoongArch64
+
+DeepSeek Harness also runs on loongarch64 (Debian). Official npm native dependencies ship prebuilt binaries for `linux-x64` and `linux-arm64` only, so a loong64 checkout must compile a few addons from source; `scripts/loongarch/setup.sh` performs the whole bootstrap:
+
+```sh
+./scripts/loongarch/setup.sh
+./scripts/loongarch/run-dsh.sh web
+```
+
+`setup.sh` installs build prerequisites, compiles libvips 8.18.3 and the lightningcss, rolldown, and sharp native bindings, repairs pnpm workspace links, and builds the workspace. The Web UI starts at `http://127.0.0.1:3080`.
+
 ## Developer preview
 
 DeepSeek Harness is currently in _developer preview_ and is iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**

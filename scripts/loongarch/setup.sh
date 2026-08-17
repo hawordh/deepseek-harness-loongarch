@@ -13,8 +13,8 @@
 #   8. pnpm run build, then verification
 #
 # Each step is idempotent: rerunning continues where it left off. Use
-# --skip-<step> to skip a step explicitly. See deepseek_harness_build.md for
-# the full runbook and troubleshooting.
+# --skip-<step> to skip a step explicitly. See README.md's LoongArch64 section
+# for prerequisites and troubleshooting.
 
 set -euo pipefail
 

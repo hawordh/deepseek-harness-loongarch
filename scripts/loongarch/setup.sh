@@ -75,7 +75,9 @@ log() { printf '\n\033[1;34m[loongarch]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[loongarch warning]\033[0m %s\n' "$*" >&2; }
 
 version_ge() {
-  local IFS=. a=($1) b=($2)
+  local a=() b=() i
+  IFS=. read -r -a a <<< "$1"
+  IFS=. read -r -a b <<< "$2"
   for i in 0 1 2; do
     [ "${a[i]:-0}" -gt "${b[i]:-0}" ] && return 0
     [ "${a[i]:-0}" -lt "${b[i]:-0}" ] && return 1
@@ -135,7 +137,8 @@ build_libvips() {
     return 0
   fi
   local src="$WORK/libvips-$VIPS_VERSION"
-  if [ ! -d "$src/.git" ]; then
+  if [ ! -d "$src/.git" ] || [ ! -f "$src/meson.build" ]; then
+    rm -rf "$src"
     log "cloning libvips v$VIPS_VERSION"
     git clone --depth 1 --branch "v$VIPS_VERSION" https://github.com/libvips/libvips.git "$src"
   fi
@@ -200,7 +203,8 @@ build_lightningcss() {
     return 0
   fi
   local src="$WORK/lightningcss-$LIGHTNINGCSS_VERSION"
-  if [ ! -d "$src/.git" ]; then
+  if [ ! -d "$src/.git" ] || [ ! -f "$src/package.json" ]; then
+    rm -rf "$src"
     log "cloning lightningcss v$LIGHTNINGCSS_VERSION"
     git clone --depth 1 --branch "v$LIGHTNINGCSS_VERSION" https://github.com/parcel-bundler/lightningcss.git "$src"
   fi
@@ -235,7 +239,8 @@ build_rolldown() {
       continue
     fi
     local src="$WORK/rolldown-${version}"
-    if [ ! -d "$src/.git" ]; then
+    if [ ! -d "$src/.git" ] || [ ! -f "$src/Cargo.toml" ]; then
+      rm -rf "$src"
       log "cloning rolldown v$version"
       git clone --depth 1 --branch "v$version" https://github.com/rolldown/rolldown.git "$src"
     fi

@@ -200,6 +200,10 @@ build_sharp() {
     echo "error: Node headers not found at $node_dir/include/node/common.gypi" >&2
     exit 1
   fi
+  # node-gyp merges npm_config_* env vars over argv unconditionally; a stale
+  # empty npm_config_nodedir from the host shell forces the download path, so
+  # pin a non-empty value here.
+  export npm_config_nodedir="$node_dir"
   local node_gyp
   node_gyp="$(npm root -g 2>/dev/null || true)/npm/node_modules/node-gyp/bin/node-gyp.js"
   [ -f "$node_gyp" ] || node_gyp="$(command -v node-gyp || true)"

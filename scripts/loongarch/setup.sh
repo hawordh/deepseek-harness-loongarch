@@ -94,7 +94,7 @@ ensure_rust() {
     echo "error: cargo not found; install rustup (https://rustup.rs) with the loongarch64-unknown-linux-gnu target" >&2
     exit 1
   fi
-  if ! rustup target list --installed 2>/dev/null | rg -q '^loongarch64-unknown-linux-gnu$'; then
+  if ! rustup target list --installed 2>/dev/null | grep -q '^loongarch64-unknown-linux-gnu$'; then
     rustup target add loongarch64-unknown-linux-gnu
   fi
 }
@@ -143,16 +143,25 @@ build_libvips() {
     git clone --depth 1 --branch "v$VIPS_VERSION" https://github.com/libvips/libvips.git "$src"
   fi
   log "building libvips $VIPS_VERSION into $VIPS_PREFIX (this takes a while)"
-  meson setup "$src/build" "$src" \
-    --prefix="$VIPS_PREFIX" \
-    -Dbuildtype=release \
-    -Dcplusplus=true \
-    -Ddocs=false \
-    -Dexamples=false \
-    -Dman-pages=false \
-    -Dtest=false
+  # The host shell may export sharp-specific CFLAGS/CXXFLAGS/LDFLAGS pointing
+  # at a previous ~/.local libvips; meson inherits them and the system libvips
+  # they inject lacks the internal symbols the bundled tools link against.
+  # Build with a clean compile/link environment; sharp links the installed
+  # libvips through PKG_CONFIG_PATH later.
+  env CFLAGS= CXXFLAGS= LDFLAGS= \
+    meson setup "$src/build" "$src" \
+      --prefix="$VIPS_PREFIX" \
+      -Dbuildtype=release \
+      -Dcplusplus=true \
+      -Ddocs=false \
+      -Dexamples=false \
+      -Dintrospection=disabled
   ninja -C "$src/build"
   ninja -C "$src/build" install
+  # sharp links `-l:libvips-cpp.so.<vips_version>` against the installed
+  # prefix, but meson only installs the .so / .so.42 / .so.42.20.3 names;
+  # create the versioned alias sharp expects.
+  ln -sfn libvips-cpp.so.42.20.3 "$VIPS_PREFIX/lib/loongarch64-linux-gnu/libvips-cpp.so.$VIPS_VERSION"
   if ! version_ge "$(vips_pkg_config)" "$VIPS_VERSION"; then
     echo "error: pkg-config still cannot find vips-cpp >= $VIPS_VERSION after install" >&2
     exit 1
@@ -181,6 +190,7 @@ build_sharp() {
   fi
   export PKG_CONFIG_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
   export LD_LIBRARY_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export LDFLAGS="-L$VIPS_PREFIX/lib/loongarch64-linux-gnu${LDFLAGS:+ $LDFLAGS}"
   local node_gyp
   node_gyp="$(npm root -g 2>/dev/null || true)/npm/node_modules/node-gyp/bin/node-gyp.js"
   [ -f "$node_gyp" ] || node_gyp="$(command -v node-gyp || true)"
@@ -210,54 +220,65 @@ build_lightningcss() {
   fi
   # The release pins a rust-toolchain that predates stable loongarch64 support.
   sed -i -E 's/^channel = "1\.[0-9][0-9]\.[0-9]"$/channel = "1.97.0"/' "$src/rust-toolchain.toml"
-  log "installing lightningcss build dependencies"
-  (cd "$src" && npm install --no-audit --no-fund)
   log "building lightningcss (cargo release; this takes a while)"
-  (cd "$src" && npm run build -- --release)
-  if [ ! -f "$src/lightningcss.linux-loong64-gnu.node" ]; then
-    echo "error: lightningcss build did not produce lightningcss.linux-loong64-gnu.node" >&2
+  # The napi CLI path drags in npm deps and zig; the cdylib the loader needs
+  # is produced by plain cargo and renamed into the installed package.
+  (cd "$src" && cargo build --release -p lightningcss_node)
+  local built="$src/target/release/liblightningcss_node.so"
+  if [ ! -f "$built" ]; then
+    echo "error: lightningcss build did not produce $built" >&2
     exit 1
   fi
-  install -m 0755 "$src/lightningcss.linux-loong64-gnu.node" "$target"
+  install -m 0755 "$built" "$target"
   log "installed lightningcss addon"
 }
 
 build_rolldown() {
-  local dirs
-  dirs="$(find node_modules/.pnpm -maxdepth 1 -type d -name 'rolldown@[0-9]*' 2>/dev/null | sort -uV)"
-  if [ -z "$dirs" ]; then
-    log "no rolldown packages installed; skipping rolldown bindings"
+  local tsdown_dir target version
+  tsdown_dir="$(find node_modules/.pnpm -maxdepth 1 -type d -name 'tsdown@*' 2>/dev/null | head -n1)"
+  if [ -z "$tsdown_dir" ]; then
+    log "tsdown not installed; skipping rolldown bindings"
     return 0
   fi
-  for dir in $dirs; do
-    local version
-    version="$(basename "$dir" | sed -E 's/^rolldown@([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-    local installed="$dir/node_modules/rolldown"
-    local binding="$installed/dist/shared/rolldown-binding.linux-loong64-gnu.node"
-    if [ -f "$binding" ]; then
-      log "rolldown $version binding already present"
-      continue
-    fi
-    local src="$WORK/rolldown-${version}"
-    if [ ! -d "$src/.git" ] || [ ! -f "$src/Cargo.toml" ]; then
-      rm -rf "$src"
-      log "cloning rolldown v$version"
-      git clone --depth 1 --branch "v$version" https://github.com/rolldown/rolldown.git "$src"
-    fi
-    sed -i -E 's/^channel = "1\.[0-9][0-9]\.[0-9]"$/channel = "1.97.0"/' "$src/rust-toolchain.toml"
-    log "installing rolldown workspace dependencies (pnpm install; this takes a while)"
-    (cd "$src" && pnpm install --frozen-lockfile)
-    log "building rolldown $version binding (cargo release; this takes a while)"
-    (cd "$src/packages/rolldown" && pnpm build-binding:release)
-    local built="$src/packages/rolldown/src/rolldown-binding.linux-loong64-gnu.node"
-    if [ ! -f "$built" ]; then
-      echo "error: rolldown build did not produce $built" >&2
-      exit 1
-    fi
-    install -m 0755 "$built" "$binding"
-    install -m 0755 "$built" "$installed/dist/rolldown-binding.linux-loong64-gnu.node" || true
-    log "installed rolldown $version binding"
-  done
+  # tsdown is the only rolldown consumer the workspace build loads; other
+  # installed versions (e.g. 1.0.3 via @vitest/mocker's optional vite-8 peer)
+  # are never imported and need no binding.
+  target="$(readlink -f "$tsdown_dir/node_modules/rolldown" 2>/dev/null || true)"
+  version="$(basename "$(dirname "$(dirname "$target" 2>/dev/null)" 2>/dev/null)" 2>/dev/null || true)"
+  version="${version#rolldown@}"
+  if [ -z "$version" ]; then
+    echo "error: cannot resolve the rolldown version tsdown links to" >&2
+    exit 1
+  fi
+  local installed="node_modules/.pnpm/rolldown@$version/node_modules/rolldown"
+  if [ ! -d "$installed" ]; then
+    echo "error: rolldown@$version is not installed ($installed)" >&2
+    exit 1
+  fi
+  local binding="$installed/dist/shared/rolldown-binding.linux-loong64-gnu.node"
+  if [ -f "$binding" ]; then
+    log "rolldown $version binding already present"
+    return 0
+  fi
+  local src="$WORK/rolldown-${version}"
+  if [ ! -d "$src/.git" ] || [ ! -f "$src/Cargo.toml" ]; then
+    rm -rf "$src"
+    log "cloning rolldown v$version"
+    git clone --depth 1 --branch "v$version" https://github.com/rolldown/rolldown.git "$src"
+  fi
+  sed -i -E 's/^channel = "1\.[0-9][0-9]\.[0-9]"$/channel = "1.97.0"/' "$src/rust-toolchain.toml"
+  log "building rolldown $version binding (cargo release; this takes a while)"
+  # The JS workspace install drags in packages (workerd, esbuild 0.18) whose
+  # postinstalls fail on loong64; the binding itself is a plain cargo cdylib.
+  (cd "$src" && cargo build --release -p rolldown_binding)
+  local built="$src/target/release/librolldown_binding.so"
+  if [ ! -f "$built" ]; then
+    echo "error: rolldown build did not produce $built" >&2
+    exit 1
+  fi
+  install -m 0755 "$built" "$binding"
+  install -m 0755 "$built" "$installed/dist/rolldown-binding.linux-loong64-gnu.node" || true
+  log "installed rolldown $version binding"
 }
 
 fix_workspace_links() {

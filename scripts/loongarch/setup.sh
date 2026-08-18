@@ -191,6 +191,11 @@ build_sharp() {
   export PKG_CONFIG_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
   export LD_LIBRARY_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
   export LDFLAGS="-L$VIPS_PREFIX/lib/loongarch64-linux-gnu${LDFLAGS:+ $LDFLAGS}"
+  # sharp's binding.gyp resolves no include dir for a non-@img libvips install,
+  # so without -I flags the compiler falls back to the system vips headers.
+  # Point it at the installed prefix and the glib include dirs vips pulls in.
+  export CFLAGS="-I$VIPS_PREFIX/include $(pkg-config --cflags-only-I glib-2.0)${CFLAGS:+ $CFLAGS}"
+  export CXXFLAGS="$CFLAGS"
   # Without --nodedir node-gyp downloads v22.x headers into
   # ~/.cache/node-gyp/<version> and fails with "common.gypi not found" when
   # nodejs.org is unreachable; the loong64 Node ships its headers locally.

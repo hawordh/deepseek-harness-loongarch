@@ -33,11 +33,16 @@ check "sharp native addon loads (libvips $(PKG_CONFIG_PATH="$VIPS_PREFIX/lib/loo
 check "lightningcss addon loads" \
   node -e "const { createRequire } = require('node:module'); const r = createRequire(process.cwd() + '/x.js'); const l = r('lightningcss'); if (typeof l.transform !== 'function') process.exit(1)"
 
-for dir in $(find node_modules/.pnpm -maxdepth 1 -type d -name 'rolldown@[0-9]*' 2>/dev/null | sort -uV); do
-  version="$(basename "$dir" | sed -E 's/^rolldown@([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
+tsdown_dir="$(find node_modules/.pnpm -maxdepth 1 -type d -name 'tsdown@*' 2>/dev/null | head -n1)"
+if [ -n "$tsdown_dir" ]; then
+  target="$(readlink -f "$tsdown_dir/node_modules/rolldown" 2>/dev/null || true)"
+  version="$(basename "$(dirname "$(dirname "$target" 2>/dev/null)" 2>/dev/null)" 2>/dev/null || true)"
+  version="${version#rolldown@}"
+fi
+if [ -n "$version" ]; then
   check "rolldown $version binding loads" \
-    bash -c "cd '$dir/node_modules/rolldown' && node --input-type=module -e \"const m = await import('rolldown'); if (!m.VERSION) process.exit(1)\""
-done
+    bash -c "cd 'node_modules/.pnpm/rolldown@$version/node_modules/rolldown' && node --input-type=module -e \"const m = await import('rolldown'); if (!m.VERSION) process.exit(1)\""
+fi
 
 check "workspace package @deepseek-ai/dsh-client-ui-directory-picker-native resolves" \
   node --import tsx/esm -e "await import('@deepseek-ai/dsh-client-ui-directory-picker-native')"

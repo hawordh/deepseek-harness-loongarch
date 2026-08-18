@@ -191,6 +191,15 @@ build_sharp() {
   export PKG_CONFIG_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
   export LD_LIBRARY_PATH="$VIPS_PREFIX/lib/loongarch64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
   export LDFLAGS="-L$VIPS_PREFIX/lib/loongarch64-linux-gnu${LDFLAGS:+ $LDFLAGS}"
+  # Without --nodedir node-gyp downloads v22.x headers into
+  # ~/.cache/node-gyp/<version> and fails with "common.gypi not found" when
+  # nodejs.org is unreachable; the loong64 Node ships its headers locally.
+  local node_dir
+  node_dir="$(dirname "$(dirname "$(node -p 'process.execPath')")")"
+  if [ ! -f "$node_dir/include/node/common.gypi" ]; then
+    echo "error: Node headers not found at $node_dir/include/node/common.gypi" >&2
+    exit 1
+  fi
   local node_gyp
   node_gyp="$(npm root -g 2>/dev/null || true)/npm/node_modules/node-gyp/bin/node-gyp.js"
   [ -f "$node_gyp" ] || node_gyp="$(command -v node-gyp || true)"
@@ -199,7 +208,7 @@ build_sharp() {
     exit 1
   fi
   log "building sharp addon with node-gyp (against libvips $VIPS_VERSION)"
-  (cd "$root" && node "$node_gyp" rebuild --directory=src)
+  (cd "$root" && node "$node_gyp" rebuild --directory=src --nodedir="$node_dir")
   if [ ! -f "$addon" ]; then
     echo "error: sharp build did not produce $addon" >&2
     exit 1

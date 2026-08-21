@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-17-loongarch64-native-dependency-strategy.md
-2026-08-17-loongarch64-native-dependency-strategy.md: 27934c2326ff825c226cfbf1e88e0cd209081e87
-2026-08-17-loongarch64-native-dependency-strategy.zh.md: 455f1dd8ebccbec2fe28e77917be58b53d15edfc
+2026-08-17-loongarch64-native-dependency-strategy.md: f86e2477d23a2285299137269faaa0a55788a01d
+2026-08-17-loongarch64-native-dependency-strategy.zh.md: 2ea61b44668f11948bb90eddc3d66b01e3b4ad23

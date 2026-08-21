@@ -10,7 +10,7 @@ harness 需要以 Web 模式运行在 loongarch64（Debian）上，但多个 npm
 
 ## 决策
 
-LoongArch64 的引导能力以 `scripts/loongarch/`（`setup.sh`、`verify.sh`、`run-dsh.sh`）、一个 lefthook 的 pnpm 补丁，以及 `deepseek_harness_build.md` 运行手册的形式入库：
+LoongArch64 的引导能力以 `scripts/loongarch/`（`setup.sh`、`verify.sh`、`run-dsh.sh`）、一个 lefthook 的 pnpm 补丁，以及 `README.md` 中的 LoongArch64 章节的形式入库：
 
 - **sharp** 锁定在 `0.35.3`；其 addon 在已安装的包内用 node-gyp 重新编译，产物落在 `src/build/Release/sharp-linux-loong64-0.35.3.node`——加载器的首选查找路径，无需修改 `dist`，也无需伪造 `@img/sharp-linux-loong64` 包。libvips 8.18.3（sharp 的最低要求）用 meson 从源码编译进 `$VIPS_PREFIX`（默认 `$HOME/.local`）；`run-dsh.sh` 为其导出 `LD_LIBRARY_PATH`。
 - **lightningcss** 1.32.0 与每个已安装的 rolldown 版本，均从各自锁定的上游 tag 源码编译（rust-toolchain 提升到 1.97.0 以获得 loongarch64 支持），并安装到解析器所期望的 pnpm store 布局中。
